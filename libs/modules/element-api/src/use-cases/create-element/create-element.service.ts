@@ -1,5 +1,12 @@
-import { DgraphProvider, DgraphTokens, DgraphUseCase } from '@codelab/backend'
-import { Dgraph_ElementFragment } from '@codelab/codegen/dgraph'
+import {
+  DgraphElement,
+  DgraphEntityType,
+  DgraphProvider,
+  DgraphTokens,
+  DgraphUpdateMutationJson,
+  DgraphUseCase,
+} from '@codelab/backend'
+import { JwtPayload } from '@codelab/backend/adapters'
 import { Atom, GetAtomService } from '@codelab/modules/atom-api'
 import { Inject, Injectable } from '@nestjs/common'
 import { Mutation, Txn } from 'dgraph-js'
@@ -10,16 +17,10 @@ import { GetLastOrderChildService } from '../get-last-order-child'
 import { CreateElementInput } from './create-element.input'
 import { CreateElementRequest } from './create-element.request'
 
-interface ValidationContext {
-  atom: Atom | undefined | null
-  parentElement: Dgraph_ElementFragment
-}
-
 @Injectable()
 export class CreateElementService extends DgraphUseCase<
   CreateElementRequest,
-  Element,
-  ValidationContext
+  Element
 > {
   constructor(
     @Inject(DgraphTokens.DgraphProvider)
@@ -35,29 +36,24 @@ export class CreateElementService extends DgraphUseCase<
   protected async executeTransaction(
     { input, currentUser }: CreateElementRequest,
     txn: Txn,
-    { parentElement }: ValidationContext,
   ) {
     const order = await this.getOrder(input)
-
-    const mu = CreateElementService.createMutation(
-      { ...input, order },
-      parentElement.ownedBy.id,
-    )
-
+    const mu = this.createMutation({ ...input, order })
     const mutationResult = await txn.mutate(mu)
-
     await txn.commit()
 
-    const uid = mutationResult.getUidsMap().get('element')
+    const createdElementId = mutationResult.getUidsMap().get('element')
 
-    if (!uid) {
+    if (!createdElementId) {
       throw CreateElementService.createError()
     }
 
+    return this.getElementOrThrow(createdElementId, currentUser)
+  }
+
+  private async getElementOrThrow(elementId: string, currentUser?: JwtPayload) {
     const element = await this.getElementService.execute({
-      input: {
-        elementId: uid,
-      },
+      input: { elementId },
       currentUser,
     })
 
@@ -68,19 +64,26 @@ export class CreateElementService extends DgraphUseCase<
     return element
   }
 
-  private static createMutation(
-    { parentElementId, order, name, atomId }: CreateElementInput,
-    ownerId: string,
-  ) {
+  private createMutation({
+    parentElementId,
+    order,
+    name,
+    atomId,
+  }: CreateElementInput) {
     const mu = new Mutation()
-    mu.setSetNquads(`
-      _:element <dgraph.type> "Element" .
-      _:element <Element.name> "${name}" .
-      _:element <Element.ownedBy> <${ownerId}> .
-      _:element <Element.parent> <${parentElementId}> .
-      <${parentElementId}> <Element.children> _:element (order=${order}) .
-      ${atomId ? `_:element <Element.atom> <${atomId}> .` : ''}
-      `)
+
+    const element: DgraphUpdateMutationJson<DgraphElement> = {
+      uid: parentElementId,
+      children: {
+        uid: '_:element',
+        name,
+        'dgraph.type': [DgraphEntityType.Node, DgraphEntityType.Element],
+        atom: atomId ? { uid: atomId } : null,
+        'children|order': order || 1,
+      },
+    }
+
+    mu.setSetJson(element)
 
     return mu
   }
@@ -89,6 +92,10 @@ export class CreateElementService extends DgraphUseCase<
     return new Error('Error while creating element')
   }
 
+  /**
+   * Returns the order from the request if defined, if not - gets the order of the last child of the same parent
+   * and returns it + 1
+   */
   private async getOrder(request: CreateElementInput): Promise<number> {
     const { order, parentElementId } = request
 
@@ -112,10 +119,7 @@ export class CreateElementService extends DgraphUseCase<
     input: { parentElementId, atomId },
     currentUser,
   }: CreateElementRequest) {
-    const { element: parentElement } = await this.elementGuardService.validate(
-      parentElementId,
-      currentUser,
-    )
+    await this.elementGuardService.validate(parentElementId, currentUser)
 
     let atom: Atom | null | undefined
 
@@ -125,11 +129,6 @@ export class CreateElementService extends DgraphUseCase<
       if (!atom) {
         throw new Error('Atom not found')
       }
-    }
-
-    return {
-      atom,
-      parentElement,
     }
   }
 }

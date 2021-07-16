@@ -90,12 +90,13 @@ export class MoveElementService extends DgraphUseCase<
     }
 
     // make sure the new parent exists and the user has ownership over it
-    const { element: newParent } = await this.elementGuardService.validate(
+    const { treeId } = await this.elementGuardService.validate(
       parentElementId,
       currentUser,
     )
 
-    if (newParent.ownedBy.id !== existingParent.ownedBy.id) {
+    if (treeId !== existingParent.ownedBy.id) {
+      // TODO - treeId of existing parent
       throw new Error("Can't move page element to a different page")
     }
 

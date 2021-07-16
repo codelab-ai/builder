@@ -20,6 +20,7 @@ import { ServerService } from '../server/server.service'
 
 export interface Options {
   watch?: boolean
+  dql?: boolean
   ci?: boolean
 }
 
@@ -56,6 +57,11 @@ export class AppService {
           },
           {
             flags: '-w, --watch',
+            required: false,
+            defaultValue: false,
+          },
+          {
+            flags: '-d, --dql',
             required: false,
             defaultValue: false,
           },
@@ -114,7 +120,7 @@ export class AppService {
     }
   }
 
-  public async codegen({ watch }: Options) {
+  public async codegen({ watch, dql }: Options) {
     try {
       /**
        * (1) Start GraphQL server
@@ -133,12 +139,16 @@ export class AppService {
        * (3) Generate merged schema & update Dgraph server
        */
 
-      const generateAndUpdateDgraphSchema = () => {
-        this.saveMergedSchema(this.dgraphConfig.schemaGeneratedFile)
-        this.dgraphProvider.updateDgraphSchema()
+      const generateAndUpdateDgraphSchema = async () => {
+        if (dql) {
+          await this.dgraphProvider.updateDqlSchema()
+        } else {
+          this.saveMergedSchema(this.dgraphConfig.schemaGeneratedFile)
+          await this.dgraphProvider.updateDgraphSchema()
+        }
       }
 
-      generateAndUpdateDgraphSchema()
+      await generateAndUpdateDgraphSchema()
 
       if (watch) {
         chokidar
@@ -148,32 +158,41 @@ export class AppService {
           ])
           .on('all', async (event, _path) => {
             console.log(event, _path)
-            generateAndUpdateDgraphSchema()
+            await generateAndUpdateDgraphSchema()
           })
       }
+
+      const promises: Array<Promise<any>> = []
 
       /**
        * (4) Graphql codegen for API
        */
-      const apiPromise = this.graphqlCodegenService.generateApi({
-        watch,
-        schema: this.graphqlSchemaConfig.apiGraphqlSchemaFile,
-        outputPath: this.graphqlSchemaConfig.apiCodegenOutputFile,
-      })
 
-      /**
-       * (5) Graphql codegen for Dgraph
-       */
-      const dgraphPromise = this.graphqlCodegenService.generateDgraph({
-        watch,
-        schema: {
-          [this.dgraphConfig.graphqlEndpoint]: {},
-        },
-        outputPath: this.graphqlSchemaConfig.dgraphCodegenOutputFile,
-        outputSchemaPath: this.graphqlSchemaConfig.dgraphGraphqlSchemaFile,
-      })
+      promises.push(
+        this.graphqlCodegenService.generateApi({
+          watch,
+          schema: this.graphqlSchemaConfig.apiGraphqlSchemaFile,
+          outputPath: this.graphqlSchemaConfig.apiCodegenOutputFile,
+        }),
+      )
 
-      await Promise.all([apiPromise, dgraphPromise])
+      if (!dql) {
+        /**
+         * (5) Graphql codegen for Dgraph
+         */
+        promises.push(
+          this.graphqlCodegenService.generateDgraph({
+            watch,
+            schema: {
+              [this.dgraphConfig.graphqlEndpoint]: {},
+            },
+            outputPath: this.graphqlSchemaConfig.dgraphCodegenOutputFile,
+            outputSchemaPath: this.graphqlSchemaConfig.dgraphGraphqlSchemaFile,
+          }),
+        )
+      }
+
+      await Promise.all(promises)
 
       shell.echo('Codegen process completed! You may Ctrl + C the terminal.')
 

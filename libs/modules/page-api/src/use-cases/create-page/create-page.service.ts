@@ -26,11 +26,9 @@ export class CreatePageService extends DgraphUseCase<
     txn: Txn,
   ) {
     const mu = new Mutation()
+
     mu.setSetNquads(
       `
-        _:page <dgraph.type> "Page" .
-        _:page <Page.name> "${name}" .
-        _:page <Page.app> <${appId}> .
         <${appId}> <App.pages> _:page .
         _:page <Page.rootElement> _:rootElement .
 

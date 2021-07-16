@@ -11,6 +11,7 @@ import { ApolloClientTokens } from '../../infrastructure'
 import { UseCase } from '../index'
 
 @Injectable()
+/** @deprecated Use DgraphUseCase only, we're moving to use DQL instead of graphql in all places */
 export abstract class GraphqlUseCase<
   TUseCaseRequestPort,
   TUseCaseDtoResponse,

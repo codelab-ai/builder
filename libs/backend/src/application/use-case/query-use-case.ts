@@ -5,6 +5,7 @@ import { DocumentNode } from 'graphql'
 import { GraphqlUseCase } from './graphql-use-case'
 
 @Injectable()
+/** @deprecated Use DgraphUseCase only, we're moving to use DQL instead of graphql in all places */
 export abstract class QueryUseCase<
   TUseCaseRequestPort,
   TUseCaseDtoResponse,

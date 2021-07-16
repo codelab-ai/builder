@@ -1,55 +1,93 @@
 import {
-  ApolloClient,
-  FetchResult,
-  NormalizedCacheObject,
-} from '@apollo/client'
-import { ApolloClientTokens, QueryUseCase } from '@codelab/backend'
-import {
-  GetElementOwnerGql,
-  GetElementOwnerQuery,
-  GetElementOwnerQueryVariables,
-} from '@codelab/codegen/dgraph'
-import { Inject, Injectable } from '@nestjs/common'
+  DgraphApp,
+  DgraphElement,
+  DgraphEntity,
+  DgraphEntityType,
+  DgraphQueryBuilderV2,
+  DgraphTree,
+  DgraphUseCase,
+  instanceOfDgraphModel,
+} from '@codelab/backend'
+import { Injectable } from '@nestjs/common'
+import { Txn } from 'dgraph-js'
 import { GetElementOwnerRequest } from './get-element-owner.request'
 import { GetElementOwnerResponse } from './get-element-owner.response'
 
-type GqlVariablesType = GetElementOwnerQueryVariables
-type GqlOperationType = GetElementOwnerQuery
+type QueryResult = {
+  '~children'?: Array<QueryResult>
+  '~root'?: [QueryResult]
+  name?: string
+  ownerId?: string
+  '~pages'?: [QueryResult]
+} & DgraphEntity<any>
 
 @Injectable()
-export class GetElementOwnerService extends QueryUseCase<
+export class GetElementOwnerService extends DgraphUseCase<
   GetElementOwnerRequest,
-  GetElementOwnerResponse,
-  GqlOperationType,
-  GqlVariablesType
+  GetElementOwnerResponse
 > {
-  constructor(
-    @Inject(ApolloClientTokens.ApolloClientProvider)
-    protected apolloClient: ApolloClient<NormalizedCacheObject>,
-  ) {
-    super(apolloClient)
-  }
+  protected async executeTransaction(
+    { elementId }: GetElementOwnerRequest,
+    txn: Txn,
+  ): Promise<GetElementOwnerResponse> {
+    const response = await txn.query(this.createQuery(elementId))
+    const result = response.getJson().query[0] as QueryResult | undefined
 
-  protected getGql() {
-    return GetElementOwnerGql
-  }
+    if (!result) {
+      return { found: false }
+    }
 
-  protected extractDataFromResult(result: FetchResult<GqlOperationType>) {
-    // For now just return the owner of the app that this element is part off
-    // later if element is used somewhere else, put ownership logic here
-    // for example - if we add element as children to component - check
-    // getElement.component.library.ownerId
-    return {
-      ownerId: result?.data?.getElement?.ownedBy?.app?.ownerId,
-      element: result?.data?.getElement || undefined,
+    let tree: QueryResult | undefined
+
+    const visit = (node: QueryResult) => {
+      if (node['~root'] && node['~root'].length) {
+        tree = node['~root'][0]
+
+        return
+      }
+
+      if (node['~children'] && node['~children'].length) {
+        node['~children'].forEach(visit)
+      }
+    }
+
+    visit(result)
+
+    if (!tree) {
+      throw new Error("Can't find owner of root-less element")
+    }
+
+    if (
+      instanceOfDgraphModel(tree, DgraphEntityType.Page) &&
+      tree['~pages'] &&
+      tree['~pages'][0] &&
+      tree['~pages'][0].ownerId
+    ) {
+      return {
+        found: true,
+        treeId: tree.uid,
+        ownerId: tree['~pages'][0].ownerId as string,
+      }
+    } else {
+      throw new Error('Unknown tree type ' + tree['dgraph.type'])
     }
   }
 
-  protected mapVariables({
-    elementId,
-  }: GetElementOwnerRequest): GqlVariablesType {
-    return {
-      elementId,
-    }
+  private createQuery(elementId: string) {
+    // We need the id of the tree which has this element
+    return new DgraphQueryBuilderV2()
+      .withBaseFields()
+      .withRecurse()
+      .withJsonFields<DgraphElement & DgraphApp>({
+        name: true,
+        ownerId: true,
+      })
+      .withJsonReverseFields<DgraphTree<any, any> & DgraphElement & DgraphApp>({
+        '~root': true,
+        '~children': true,
+        '~pages': true,
+      })
+      .withUidFunc(elementId)
+      .build()
   }
 }

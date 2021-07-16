@@ -1,51 +1,29 @@
-import {
-  ApolloClient,
-  FetchResult,
-  NormalizedCacheObject,
-} from '@apollo/client'
-import { ApolloClientTokens, QueryUseCase } from '@codelab/backend'
-import {
-  GetElementGql,
-  GetElementQuery,
-  GetElementQueryVariables,
-} from '@codelab/codegen/dgraph'
+import { DgraphProvider, DgraphTokens, DgraphUseCase } from '@codelab/backend'
 import { Inject, Injectable } from '@nestjs/common'
+import { Txn } from 'dgraph-js'
 import { ElementGuardService } from '../../auth'
 import { Element } from '../../models'
 import { GetElementRequest } from './get-element.request'
 
-type GqlVariablesType = GetElementQueryVariables
-type GqlOperationType = GetElementQuery
-
 @Injectable()
-export class GetElementService extends QueryUseCase<
+export class GetElementService extends DgraphUseCase<
   GetElementRequest,
-  Element | null,
-  GqlOperationType,
-  GqlVariablesType
+  Element | null
 > {
   constructor(
-    @Inject(ApolloClientTokens.ApolloClientProvider)
-    protected apolloClient: ApolloClient<NormalizedCacheObject>,
+    @Inject(DgraphTokens.DgraphProvider)
+    protected readonly dgraphProvider: DgraphProvider,
     private elementGuardService: ElementGuardService,
   ) {
-    super(apolloClient)
+    super(dgraphProvider)
   }
 
-  protected getGql() {
-    return GetElementGql
-  }
-
-  protected extractDataFromResult(result: FetchResult<GqlOperationType>) {
-    return Element.Schema.parse(result?.data?.getElement) || null
-  }
-
-  protected mapVariables({
-    input: { elementId },
-  }: GetElementRequest): GqlVariablesType {
-    return {
-      id: elementId,
-    }
+  protected executeTransaction(
+    request: GetElementRequest,
+    txn: Txn,
+    validationContext: void,
+  ): Promise<Element | null> {
+    return Promise.resolve(undefined as any)
   }
 
   protected async validate({

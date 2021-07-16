@@ -1,2 +1,5 @@
+export * from './dgraph.schema'
+export * from './dgraph-entity-type'
 export * from './dgraph-use-case'
+export * from './interfaces'
 export * from './query-building'

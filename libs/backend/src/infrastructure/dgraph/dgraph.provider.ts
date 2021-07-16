@@ -9,6 +9,7 @@ import {
 import { promises as fs } from 'fs'
 import fetch from 'node-fetch'
 import shell from 'shelljs'
+import { dgraphSchema } from '../../application/dgraph/dgraph.schema'
 import { DgraphConfig } from './config/dgraph.config'
 import { DgraphTokens } from './config/dgraph.tokens'
 
@@ -16,7 +17,8 @@ export interface DgraphProvider {
   client: DgraphClient
   /** Drops just the data, without the schema */
   resetDb: () => Promise<any>
-  updateDgraphSchema: () => void
+  updateDgraphSchema: () => Promise<void>
+  updateDqlSchema: () => Promise<void>
 }
 
 type UpdateDgraphSchemaConfig = {
@@ -92,7 +94,7 @@ export const dgraphClientProvider: Provider<DgraphProvider> = {
 
     return {
       client: dgraphClient,
-      updateDgraphSchema: async () =>
+      updateDgraphSchema: () =>
         updateSchema({
           endpoint: dgraphConfig?.endpoint,
           schemaFile: dgraphConfig?.schemaGeneratedFile,
@@ -102,7 +104,6 @@ export const dgraphClientProvider: Provider<DgraphProvider> = {
         const op = new Operation()
 
         op.setDropOp(Operation.DropOp.DATA) // <- deletes just the data
-        // op.setDropAll(true) // <- deletes schema and data
 
         await dgraphClient.alter(op)
 
@@ -111,6 +112,13 @@ export const dgraphClientProvider: Provider<DgraphProvider> = {
           schemaFile: dgraphConfig?.schemaGeneratedFile,
           apiKey: dgraphConfig?.apiKey,
         })
+      },
+      updateDqlSchema: async () => {
+        const op = new Operation()
+
+        op.setSchema(dgraphSchema)
+
+        await dgraphClient.alter(op)
       },
     }
   },
