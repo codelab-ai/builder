@@ -6,6 +6,7 @@ export enum DgraphEntityType {
   Tree = 'Tree',
   Page = 'Page',
   Component = 'Component',
+  Library = 'Library',
   Node = 'Node',
   App = 'App',
   Element = 'Element',

@@ -3,106 +3,108 @@
  * If you change the schema - change the interfaces in ./interfaces too
  * If you add new types, add them to ./dgraph-entity-type
  */
+import { DgraphEntityType } from './dgraph-entity-type'
+
 export const dgraphSchema = `
 
-    type Tree {
+    type ${DgraphEntityType.Tree} {
        name
        root
     }
 
-    type Node {
+    type ${DgraphEntityType.Node} {
        name
        children
     }
 
-    type App {
+    type ${DgraphEntityType.App} {
        ownerId
        name
        pages
     }
 
-    type Page {}
+    type ${DgraphEntityType.Page} {}
 
-    type Component {}
+    type ${DgraphEntityType.Component} {}
 
-    type Library {
+    type ${DgraphEntityType.Library} {
       ownerId
       name
       atoms
       components
     }
 
-    type Element {
+    type ${DgraphEntityType.Element} {
       component
       atom
       props
       css
     }
 
-    type Atom {
+    type ${DgraphEntityType.Atom} {
       name
       atomType
       api
     }
 
 
-   type Type {
+   type ${DgraphEntityType.Type} {
       name
    }
 
-   type PrimitiveType {
+   type ${DgraphEntityType.PrimitiveType} {
       primitiveKind
    }
 
-   type ArrayType {
+   type ${DgraphEntityType.ArrayType} {
       itemType
    }
 
-   type EnumTypeValue {
+   type ${DgraphEntityType.EnumTypeValue} {
       name
       stringValue
    }
 
-   type EnumType {
+   type ${DgraphEntityType.EnumType} {
       allowedValues
    }
 
-   type InterfaceType {
+   type ${DgraphEntityType.InterfaceType} {
       fields
    }
 
-   type Field {
+   type ${DgraphEntityType.Field} {
       type
       key
       name
       description
    }
 
-   type StringValue {
+   type ${DgraphEntityType.StringValue} {
       stringValue
    }
 
-   type IntValue {
+   type ${DgraphEntityType.IntValue} {
       intValue
    }
 
-   type FloatValue {
+   type ${DgraphEntityType.FloatValue} {
       floatValue
    }
 
-   type BooleanValue {
+   type ${DgraphEntityType.BooleanValue} {
       booleanValue
    }
 
-   type ArrayValue {
+   type ${DgraphEntityType.ArrayValue} {
       values
    }
 
-   type InterfaceValue {
+   type ${DgraphEntityType.InterfaceValue} {
       fieldData
    }
 
-   type FieldData {
+   type ${DgraphEntityType.FieldData} {
       field
       value
    }
