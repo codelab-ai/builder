@@ -92,6 +92,14 @@ export const dgraphClientProvider: Provider<DgraphProvider> = {
 
     const dgraphClient = new DgraphClient(clientStub)
 
+    const updateDqlSchema = async () => {
+      const op = new Operation()
+
+      op.setSchema(dgraphSchema)
+
+      await dgraphClient.alter(op)
+    }
+
     return {
       client: dgraphClient,
       updateDgraphSchema: () =>
@@ -107,19 +115,15 @@ export const dgraphClientProvider: Provider<DgraphProvider> = {
 
         await dgraphClient.alter(op)
 
-        return updateSchema({
+        await updateSchema({
           endpoint: dgraphConfig?.endpoint,
           schemaFile: dgraphConfig?.schemaGeneratedFile,
           apiKey: dgraphConfig?.apiKey,
         })
-      },
-      updateDqlSchema: async () => {
-        const op = new Operation()
 
-        op.setSchema(dgraphSchema)
-
-        await dgraphClient.alter(op)
+        await updateDqlSchema()
       },
+      updateDqlSchema,
     }
   },
   inject: [DgraphTokens.DgraphConfig],

@@ -1,3 +1,4 @@
+import { DgraphApp } from '@codelab/backend'
 import { Field, ID, ObjectType } from '@nestjs/graphql'
 import { z } from 'zod'
 
@@ -12,6 +13,16 @@ export class App {
 
   @Field()
   declare name: string
+
+  constructor(id: string, ownerId: string, name: string) {
+    this.id = id
+    this.ownerId = ownerId
+    this.name = name
+  }
+
+  static fromDgraph({ ownerId, name, uid }: DgraphApp) {
+    return new App(uid, ownerId, name)
+  }
 }
 
 export const appSchema = z.object({

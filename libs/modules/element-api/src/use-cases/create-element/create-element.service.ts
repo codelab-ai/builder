@@ -1,4 +1,5 @@
 import {
+  CreateResponse,
   DgraphElement,
   DgraphEntityType,
   DgraphProvider,
@@ -6,12 +7,10 @@ import {
   DgraphUpdateMutationJson,
   DgraphUseCase,
 } from '@codelab/backend'
-import { JwtPayload } from '@codelab/backend/adapters'
 import { Atom, GetAtomService } from '@codelab/modules/atom-api'
 import { Inject, Injectable } from '@nestjs/common'
 import { Mutation, Txn } from 'dgraph-js'
 import { ElementGuardService } from '../../auth'
-import { Element } from '../../models/'
 import { GetElementService } from '../get-element'
 import { GetLastOrderChildService } from '../get-last-order-child'
 import { CreateElementInput } from './create-element.input'
@@ -20,7 +19,7 @@ import { CreateElementRequest } from './create-element.request'
 @Injectable()
 export class CreateElementService extends DgraphUseCase<
   CreateElementRequest,
-  Element
+  CreateResponse
 > {
   constructor(
     @Inject(DgraphTokens.DgraphProvider)
@@ -34,9 +33,9 @@ export class CreateElementService extends DgraphUseCase<
   }
 
   protected async executeTransaction(
-    { input, currentUser }: CreateElementRequest,
+    { input }: CreateElementRequest,
     txn: Txn,
-  ) {
+  ): Promise<CreateResponse> {
     const order = await this.getOrder(input)
     const mu = this.createMutation({ ...input, order })
     const mutationResult = await txn.mutate(mu)
@@ -48,20 +47,7 @@ export class CreateElementService extends DgraphUseCase<
       throw CreateElementService.createError()
     }
 
-    return this.getElementOrThrow(createdElementId, currentUser)
-  }
-
-  private async getElementOrThrow(elementId: string, currentUser?: JwtPayload) {
-    const element = await this.getElementService.execute({
-      input: { elementId },
-      currentUser,
-    })
-
-    if (!element) {
-      throw CreateElementService.createError()
-    }
-
-    return element
+    return { id: createdElementId }
   }
 
   private createMutation({

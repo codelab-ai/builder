@@ -37,6 +37,7 @@ generates:
       #   operationName: 'dgraph'
       scalars:
         uuid: string
+        Void: void
         json: Record<string, any>
         jsonb: Record<string, any>
         DateTime: string
@@ -55,6 +56,8 @@ generates:
       - typescript-operations
       - typescript-react-apollo
       - typescript-document-nodes
+    scalars:
+      Void: void
     config:
       # defaultBaseOptions:
       #   operationName: 'api'

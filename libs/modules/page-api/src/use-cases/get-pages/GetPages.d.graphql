@@ -5,7 +5,7 @@ query GetPages(
   $first: Int
   $offset: Int
 ) {
-  getApp(id: $appId) {
+  getApp: getAppDeprecated(id: $appId) {
     pages(filter: $filter, first: $first, offset: $offset, order: $order) {
       ...Dgraph__Page
     }

@@ -7,6 +7,10 @@ interface Type {
   name: String!
 }
 
+type CreateResponse {
+  id: String!
+}
+
 type DeleteResponse {
   affected: Int!
 }
@@ -508,9 +512,9 @@ input PropsByInterfaceValueId {
 }
 
 type Mutation {
-  createApp(input: CreateAppInput!): App!
-  updateApp(input: UpdateAppInput!): App!
-  deleteApp(input: DeleteAppInput!): App!
+  createApp(input: CreateAppInput!): CreateResponse!
+  updateApp(input: UpdateAppInput!): Void!
+  deleteApp(input: DeleteAppInput!): Void!
   updateUser(input: UpdateUserInput!): User!
   deleteUser(input: DeleteUserInput!): Boolean!
   createPage(input: CreatePageInput!): Page!
@@ -544,6 +548,11 @@ type Mutation {
 input CreateAppInput {
   name: String!
 }
+
+"""
+Date custom scalar type
+"""
+scalar Void
 
 input UpdateAppInput {
   id: String!

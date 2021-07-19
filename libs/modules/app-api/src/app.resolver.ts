@@ -1,3 +1,4 @@
+import { CreateResponse, Void } from '@codelab/backend'
 import { JwtPayload } from '@codelab/backend/adapters'
 import { CurrentUser, GqlAuthGuard } from '@codelab/modules/auth-api'
 import { Injectable, UseGuards } from '@nestjs/common'
@@ -26,7 +27,7 @@ export class AppResolver {
     private readonly deleteAppService: DeleteAppService,
   ) {}
 
-  @Mutation(() => App)
+  @Mutation(() => CreateResponse)
   @UseGuards(GqlAuthGuard)
   createApp(
     @Args('input') input: CreateAppInput,
@@ -53,7 +54,7 @@ export class AppResolver {
     return this.getAppsService.execute({ ownerId: user.sub })
   }
 
-  @Mutation(() => App)
+  @Mutation(() => Void, { nullable: true })
   @UseGuards(GqlAuthGuard)
   updateApp(
     @Args('input') input: UpdateAppInput,
@@ -62,7 +63,7 @@ export class AppResolver {
     return this.updateAppService.execute({ input, currentUser })
   }
 
-  @Mutation(() => App)
+  @Mutation(() => Void, { nullable: true })
   @UseGuards(GqlAuthGuard)
   deleteApp(
     @Args('input') input: DeleteAppInput,

@@ -1,3 +1,4 @@
+import { Void } from '@codelab/backend'
 import { Module } from '@nestjs/common'
 import { AppResolver } from './app.resolver'
 import { AppGuardService } from './auth'
@@ -19,7 +20,7 @@ const services = [
 ]
 
 @Module({
-  providers: [AppResolver, ...services],
+  providers: [AppResolver, ...services, Void],
   exports: [...services],
 })
 export class AppModule {}

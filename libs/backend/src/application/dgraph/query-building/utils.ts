@@ -1,9 +1,13 @@
 import { IBuildable } from './i-query-builder'
 
 export interface CompileMultipleOptions {
+  /** Will be inserted before the final compiled string */
   prefix?: string
+  /** Will be inserted after the final compiled string */
   postfix?: string
+  /** Will insert new lines between items, defaults to true */
   multiline?: boolean
+  /** Use this to plug in to the loop */
   forEach?: (item: IBuildable | string) => void
 }
 

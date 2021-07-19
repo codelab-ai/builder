@@ -177,7 +177,7 @@ enum AtomType {
   HtmlSup
 }
 
-type App {
+type AppDeprecated {
   id: ID!
   ownerId: String! @search(by: [hash])
   pages: [Page] @hasInverse(field: app)
@@ -187,7 +187,7 @@ type App {
 type Page {
   id: ID!
   name: String! @search(by: [term, fulltext])
-  app: App!
+  app: AppDeprecated!
   rootElement: Element!
 }
 

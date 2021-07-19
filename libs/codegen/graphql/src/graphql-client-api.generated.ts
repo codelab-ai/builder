@@ -16,6 +16,8 @@ export type Scalars = {
   Boolean: boolean
   Int: number
   Float: number
+  /** Date custom scalar type */
+  Void: void
 }
 
 export type App = {
@@ -289,6 +291,10 @@ export type CreatePrimitiveTypeInput = {
   primitiveKind: PrimitiveKind
 }
 
+export type CreateResponse = {
+  id: Scalars['String']
+}
+
 /** Provide one of the properties */
 export type CreateTypeInput = {
   name: Scalars['String']
@@ -497,9 +503,9 @@ export type MoveElementInput = {
 }
 
 export type Mutation = {
-  createApp: App
-  updateApp: App
-  deleteApp: App
+  createApp: CreateResponse
+  updateApp: Scalars['Void']
+  deleteApp: Scalars['Void']
   updateUser: User
   deleteUser: Scalars['Boolean']
   createPage: Page
@@ -933,17 +939,19 @@ export type User = {
   username?: Maybe<Scalars['String']>
 }
 
+export type __AppFragment = Pick<App, 'id' | 'name'>
+
 export type CreateAppMutationVariables = Exact<{
   input: CreateAppInput
 }>
 
-export type CreateAppMutation = { createApp: __AppFragment }
+export type CreateAppMutation = { createApp: Pick<CreateResponse, 'id'> }
 
 export type DeleteAppMutationVariables = Exact<{
   input: DeleteAppInput
 }>
 
-export type DeleteAppMutation = { deleteApp: Pick<App, 'id'> }
+export type DeleteAppMutation = Pick<Mutation, 'deleteApp'>
 
 export type GetAppQueryVariables = Exact<{
   input: GetAppInput
@@ -959,9 +967,7 @@ export type UpdateAppMutationVariables = Exact<{
   input: UpdateAppInput
 }>
 
-export type UpdateAppMutation = { app: __AppFragment }
-
-export type __AppFragment = Pick<App, 'id' | 'name'>
+export type UpdateAppMutation = { app: Mutation['updateApp'] }
 
 export type __AtomFragment = Pick<Atom, 'id' | 'label' | 'type'> & {
   propTypes: __InterfaceWithoutFieldsFragment
@@ -1895,10 +1901,9 @@ export const __UserFragmentDoc = gql`
 export const CreateAppGql = gql`
   mutation CreateApp($input: CreateAppInput!) {
     createApp(input: $input) {
-      ...__App
+      id
     }
   }
-  ${__AppFragmentDoc}
 `
 export type CreateAppMutationFn = Apollo.MutationFunction<
   CreateAppMutation,
@@ -1944,9 +1949,7 @@ export type CreateAppMutationOptions = Apollo.BaseMutationOptions<
 >
 export const DeleteAppGql = gql`
   mutation DeleteApp($input: DeleteAppInput!) {
-    deleteApp(input: $input) {
-      id
-    }
+    deleteApp(input: $input)
   }
 `
 export type DeleteAppMutationFn = Apollo.MutationFunction<
@@ -2096,11 +2099,8 @@ export function refetchGetAppsQuery(variables?: GetAppsQueryVariables) {
 }
 export const UpdateAppGql = gql`
   mutation UpdateApp($input: UpdateAppInput!) {
-    app: updateApp(input: $input) {
-      ...__App
-    }
+    app: updateApp(input: $input)
   }
-  ${__AppFragmentDoc}
 `
 export type UpdateAppMutationFn = Apollo.MutationFunction<
   UpdateAppMutation,
@@ -4646,16 +4646,13 @@ export const __User = gql`
 export const CreateApp = gql`
   mutation CreateApp($input: CreateAppInput!) {
     createApp(input: $input) {
-      ...__App
+      id
     }
   }
-  ${__App}
 `
 export const DeleteApp = gql`
   mutation DeleteApp($input: DeleteAppInput!) {
-    deleteApp(input: $input) {
-      id
-    }
+    deleteApp(input: $input)
   }
 `
 export const GetApp = gql`
@@ -4676,11 +4673,8 @@ export const GetApps = gql`
 `
 export const UpdateApp = gql`
   mutation UpdateApp($input: UpdateAppInput!) {
-    app: updateApp(input: $input) {
-      ...__App
-    }
+    app: updateApp(input: $input)
   }
-  ${__App}
 `
 export const CreateAtom = gql`
   mutation CreateAtom($input: CreateAtomInput!) {

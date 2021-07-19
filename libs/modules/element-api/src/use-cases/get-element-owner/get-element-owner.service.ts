@@ -76,18 +76,18 @@ export class GetElementOwnerService extends DgraphUseCase<
   private createQuery(elementId: string) {
     // We need the id of the tree which has this element
     return new DgraphQueryBuilderV2()
-      .withBaseFields()
-      .withRecurse()
-      .withJsonFields<DgraphElement & DgraphApp>({
+      .addBaseFields()
+      .addRecurseDirective()
+      .addJsonFields<DgraphElement & DgraphApp>({
         name: true,
         ownerId: true,
       })
-      .withJsonReverseFields<DgraphTree<any, any> & DgraphElement & DgraphApp>({
+      .addJsonReverseFields<DgraphTree<any, any> & DgraphElement & DgraphApp>({
         '~root': true,
         '~children': true,
         '~pages': true,
       })
-      .withUidFunc(elementId)
+      .setUidFunc(elementId)
       .build()
   }
 }

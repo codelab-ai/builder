@@ -45,14 +45,19 @@ directive @secret(field: String!, pred: String) on OBJECT | INTERFACE
 
 directive @withSubscription on OBJECT | INTERFACE | FIELD_DEFINITION
 
-input AddAppInput {
+input AddAppDeprecatedInput {
   ownerId: String!
   pages: [PageRef]
   name: String!
 }
 
-type AddAppPayload {
-  app(filter: AppFilter, order: AppOrder, first: Int, offset: Int): [App]
+type AddAppDeprecatedPayload {
+  appDeprecated(
+    filter: AppDeprecatedFilter
+    order: AppDeprecatedOrder
+    first: Int
+    offset: Int
+  ): [AppDeprecated]
   numUids: Int
 }
 
@@ -268,7 +273,7 @@ type AddLibraryPayload {
 
 input AddPageInput {
   name: String!
-  app: AppRef!
+  app: AppDeprecatedRef!
   rootElement: ElementRef!
 }
 
@@ -326,7 +331,7 @@ type AddTagPayload {
   numUids: Int
 }
 
-type App {
+type AppDeprecated {
   id: ID!
   ownerId: String!
   pages(filter: PageFilter, order: PageOrder, first: Int, offset: Int): [Page]
@@ -334,7 +339,7 @@ type App {
   pagesAggregate(filter: PageFilter): PageAggregateResult
 }
 
-type AppAggregateResult {
+type AppDeprecatedAggregateResult {
   count: Int
   ownerIdMin: String
   ownerIdMax: String
@@ -342,39 +347,39 @@ type AppAggregateResult {
   nameMax: String
 }
 
-input AppFilter {
+input AppDeprecatedFilter {
   id: [ID!]
   ownerId: StringHashFilter
-  has: [AppHasFilter]
-  and: [AppFilter]
-  or: [AppFilter]
-  not: AppFilter
+  has: [AppDeprecatedHasFilter]
+  and: [AppDeprecatedFilter]
+  or: [AppDeprecatedFilter]
+  not: AppDeprecatedFilter
 }
 
-enum AppHasFilter {
+enum AppDeprecatedHasFilter {
   ownerId
   pages
   name
 }
 
-input AppOrder {
-  asc: AppOrderable
-  desc: AppOrderable
-  then: AppOrder
+input AppDeprecatedOrder {
+  asc: AppDeprecatedOrderable
+  desc: AppDeprecatedOrderable
+  then: AppDeprecatedOrder
 }
 
-enum AppOrderable {
+enum AppDeprecatedOrderable {
   ownerId
   name
 }
 
-input AppPatch {
+input AppDeprecatedPatch {
   ownerId: String
   pages: [PageRef]
   name: String
 }
 
-input AppRef {
+input AppDeprecatedRef {
   id: ID
   ownerId: String
   pages: [PageRef]
@@ -830,8 +835,13 @@ input DateTimeRange {
   max: DateTime!
 }
 
-type DeleteAppPayload {
-  app(filter: AppFilter, order: AppOrder, first: Int, offset: Int): [App]
+type DeleteAppDeprecatedPayload {
+  appDeprecated(
+    filter: AppDeprecatedFilter
+    order: AppDeprecatedOrder
+    first: Int
+    offset: Int
+  ): [AppDeprecated]
   msg: String
   numUids: Int
 }
@@ -1636,9 +1646,11 @@ input MultiPolygonRef {
 }
 
 type Mutation {
-  addApp(input: [AddAppInput!]!): AddAppPayload
-  updateApp(input: UpdateAppInput!): UpdateAppPayload
-  deleteApp(filter: AppFilter!): DeleteAppPayload
+  addAppDeprecated(input: [AddAppDeprecatedInput!]!): AddAppDeprecatedPayload
+  updateAppDeprecated(
+    input: UpdateAppDeprecatedInput!
+  ): UpdateAppDeprecatedPayload
+  deleteAppDeprecated(filter: AppDeprecatedFilter!): DeleteAppDeprecatedPayload
   addPage(input: [AddPageInput!]!): AddPagePayload
   updatePage(input: UpdatePageInput!): UpdatePagePayload
   deletePage(filter: PageFilter!): DeletePagePayload
@@ -1716,7 +1728,7 @@ input NearFilter {
 type Page {
   id: ID!
   name: String!
-  app(filter: AppFilter): App!
+  app(filter: AppDeprecatedFilter): AppDeprecated!
   rootElement(filter: ElementFilter): Element!
 }
 
@@ -1753,14 +1765,14 @@ enum PageOrderable {
 
 input PagePatch {
   name: String
-  app: AppRef
+  app: AppDeprecatedRef
   rootElement: ElementRef
 }
 
 input PageRef {
   id: ID
   name: String
-  app: AppRef
+  app: AppDeprecatedRef
   rootElement: ElementRef
 }
 
@@ -1934,9 +1946,16 @@ enum PropValueType {
 }
 
 type Query {
-  getApp(id: ID!): App
-  queryApp(filter: AppFilter, order: AppOrder, first: Int, offset: Int): [App]
-  aggregateApp(filter: AppFilter): AppAggregateResult
+  getAppDeprecated(id: ID!): AppDeprecated
+  queryAppDeprecated(
+    filter: AppDeprecatedFilter
+    order: AppDeprecatedOrder
+    first: Int
+    offset: Int
+  ): [AppDeprecated]
+  aggregateAppDeprecated(
+    filter: AppDeprecatedFilter
+  ): AppDeprecatedAggregateResult
   getPage(id: ID!): Page
   queryPage(
     filter: PageFilter
@@ -2285,14 +2304,19 @@ enum TypeUnionType {
   PrimitiveType
 }
 
-input UpdateAppInput {
-  filter: AppFilter!
-  set: AppPatch
-  remove: AppPatch
+input UpdateAppDeprecatedInput {
+  filter: AppDeprecatedFilter!
+  set: AppDeprecatedPatch
+  remove: AppDeprecatedPatch
 }
 
-type UpdateAppPayload {
-  app(filter: AppFilter, order: AppOrder, first: Int, offset: Int): [App]
+type UpdateAppDeprecatedPayload {
+  appDeprecated(
+    filter: AppDeprecatedFilter
+    order: AppDeprecatedOrder
+    first: Int
+    offset: Int
+  ): [AppDeprecated]
   numUids: Int
 }
 

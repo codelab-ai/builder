@@ -1,6 +1,7 @@
+import { DgraphEntityType } from '../dgraph-entity-type'
 import { DgraphEntity } from '../interfaces'
 import { DgraphQueryField } from './dgraph-query-field'
-import { DgraphFilter } from './filters'
+import { DgraphFilter, EqFilter } from './filters'
 import {
   IBuildable,
   IDgraphQueryFilter,
@@ -41,6 +42,7 @@ export type WithReverseFields<TOtherEntity extends DgraphEntity<any>> = {
     : never
 }
 
+/** Not working very well at the moment */
 export type InferQueryResult<
   TJsonQuery extends DgraphQueryJson<TEntity>,
   TEntity extends DgraphEntity<any>,
@@ -59,9 +61,13 @@ export type InferQueryResult<
 export class DgraphQueryBuilderV2 implements IQueryBuilder {
   protected _queryName = 'query'
 
+  public get queryName() {
+    return this._queryName
+  }
+
   protected _func?: Array<IDgraphQueryFilter>
 
-  protected _directive?: string | IBuildable
+  protected _directive: Array<string | IBuildable> = []
 
   protected _fields: Array<DgraphQueryField | string>
 
@@ -86,60 +92,76 @@ export class DgraphQueryBuilderV2 implements IQueryBuilder {
   }
 
   /** Sets the func to a new value */
-  withFunc(func: string | IDgraphQueryFilter | Array<IDgraphQueryFilter>) {
+  setFunc(func: string | IDgraphQueryFilter | Array<IDgraphQueryFilter>) {
     if (typeof func === 'string') {
-      return this.withFilterFuncString(func)
+      return this.setFilterFuncString(func)
     }
 
     if (Array.isArray(func)) {
-      return this.withFiltersFunc(func)
+      return this.setFiltersFunc(func)
     }
 
-    return this.withFilterFunc(func)
+    return this.setFilterFunc(func)
   }
 
-  withFilterFuncString(filterString: string) {
+  /** Will override all previous func filters */
+  setFilterFuncString(filterString: string) {
     this._func = [new DgraphFilter().withFilter(filterString)]
 
     return this
   }
 
-  withFilterFunc(filter: IDgraphQueryFilter) {
+  /** Will override all previous func filters */
+  setFilterFunc(filter: IDgraphQueryFilter) {
     this._func = [filter]
 
     return this
   }
 
-  withFiltersFunc(filters: Array<IDgraphQueryFilter>) {
+  /** Will override all previous func filters */
+  setFiltersFunc(filters: Array<IDgraphQueryFilter>) {
     this._func = filters
 
     return this
   }
 
-  withDirective(directive: string | IBuildable) {
-    this._directive = directive
+  addDirective(directive: string | IBuildable) {
+    this._directive.push(directive)
 
     return this
   }
 
-  withUidFunc(uid: string) {
-    return this.withFilterFuncString(`uid(${uid})`)
+  addEqFilterDirective<TEntity extends DgraphEntity<any> | unknown = unknown>(
+    predicate: TEntity extends DgraphEntity<any> ? keyof TEntity : string,
+    value: string,
+  ) {
+    return this.addDirective(
+      `@filter(${new EqFilter<TEntity>(predicate, value).build()})`,
+    )
   }
 
-  withTypeFunc(type: string) {
-    return this.withFilterFuncString(`type(${type})`)
+  /** Will override all previous filters */
+  setUidFunc(uid: string) {
+    return this.setFilterFuncString(`uid(${uid})`)
   }
 
-  withUidsFunc(uids: Array<string>) {
-    return this.withFilterFuncString(`uid(${uids.join(',')})`)
+  /** Will override all previous func filters */
+  setTypeFunc(type: DgraphEntityType) {
+    return this.setFilterFuncString(`type(${type})`)
   }
 
-  withRecurse() {
-    return this.withDirective('@recurse')
+  /** Will override all previous func filters */
+  setUidsFunc(uids: Array<string>) {
+    return this.setFilterFuncString(`uid(${uids.join(',')})`)
+  }
+
+  /** Adds @recurse directive to the query */
+  addRecurseDirective() {
+    return this.addDirective('@recurse')
   }
 
   /** Appends fields to the current field selection */
-  withFields(...fields: Array<DgraphQueryField | string>) {
+  addFields(...fields: Array<DgraphQueryField | string>) {
     for (const f of fields) {
       if (typeof f === 'object') {
         f.compile()
@@ -151,22 +173,22 @@ export class DgraphQueryBuilderV2 implements IQueryBuilder {
     return this
   }
 
-  withJsonReverseFields<TOtherEntity extends DgraphEntity<any>>(
+  addJsonReverseFields<TOtherEntity extends DgraphEntity<any>>(
     json: WithReverseFields<TOtherEntity>,
   ) {
-    return this.withJsonFields(json as any)
+    return this.addJsonFields(json as any)
   }
 
-  withJsonFields<TEntity extends DgraphEntity<any>>(
+  addJsonFields<TEntity extends DgraphEntity<any>>(
     json: DgraphQueryJson<TEntity>,
   ) {
     Object.keys(json).forEach((key) => {
       const value = (json as any)[key]
 
       if (typeof value === 'object') {
-        this.withFields(key + value)
+        this.addFields(key + value)
       } else if (value) {
-        this.withFields(key)
+        this.addFields(key)
       }
     })
 
@@ -174,8 +196,18 @@ export class DgraphQueryBuilderV2 implements IQueryBuilder {
   }
 
   /** Appends uid and dgraph.type to the current field selection */
-  withBaseFields() {
-    return this.withFields('uid', 'dgraph.type')
+  addBaseFields() {
+    return this.addFields('uid', 'dgraph.type')
+  }
+
+  addExpandAll() {
+    return this.addFields('expand(_all_)')
+  }
+
+  addExpandType(type: string | Array<string>) {
+    const typeArray = Array.isArray(type) ? type : [type]
+
+    return this.addFields(...typeArray.map((typeItem) => `expand(${typeItem})`))
   }
 
   build(): string {
@@ -214,9 +246,9 @@ export class DgraphQueryBuilderV2 implements IQueryBuilder {
     const funcString = compileMultiple(this._func)
 
     const directiveString =
-      typeof this._directive === 'string' || !this._directive
-        ? this._directive
-        : this._directive.build()
+      this._directive && this._directive.length
+        ? compileMultiple(this._directive)
+        : undefined
 
     return `
        {

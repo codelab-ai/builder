@@ -1,44 +1,32 @@
-import { FetchResult } from '@apollo/client'
-import { QueryUseCase } from '@codelab/backend'
 import {
-  GetAppGql,
-  GetAppQuery,
-  GetAppQueryVariables,
-} from '@codelab/codegen/dgraph'
+  DgraphApp,
+  DgraphGetUseCase,
+  DgraphQueryBuilderV2,
+} from '@codelab/backend'
 import { Injectable } from '@nestjs/common'
-import { App, appSchema } from '../../app.model'
+import { App } from '../../app.model'
 import { GetAppRequest } from './get-app.request'
 
 @Injectable()
-export class GetAppService extends QueryUseCase<
+export class GetAppService extends DgraphGetUseCase<
   GetAppRequest,
-  App | null,
-  GetAppQuery,
-  GetAppQueryVariables
+  DgraphApp,
+  App
 > {
-  protected extractDataFromResult(
-    result: FetchResult<GetAppQuery>,
-    _: void,
-    { currentUser }: GetAppRequest,
-  ): App | null {
-    const app = appSchema.nullable().parse(result?.data?.app || null)
+  protected createQuery({ input: { appId } }: GetAppRequest) {
+    return new DgraphQueryBuilderV2()
+      .setUidFunc(appId)
+      .addBaseFields()
+      .addExpandAll()
+  }
 
+  protected mapResult(app: DgraphApp, { currentUser }: GetAppRequest) {
     // We don't use the appGuard here because it would create a circular dependency
     // and because we allow it if the app doesn't exist
-    if (app && app.ownerId !== currentUser?.sub) {
+    if (!currentUser || app.ownerId !== currentUser?.sub) {
       throw new Error("You don't have access to this app")
     }
 
-    return app
-  }
-
-  protected getGql() {
-    return GetAppGql
-  }
-
-  protected mapVariables({ input }: GetAppRequest): GetAppQueryVariables {
-    return {
-      id: input.appId,
-    }
+    return App.fromDgraph(app)
   }
 }
